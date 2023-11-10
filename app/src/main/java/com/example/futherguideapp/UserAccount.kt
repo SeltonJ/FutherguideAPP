@@ -2,7 +2,6 @@ package com.example.futherguideapp
 
 import android.annotation.SuppressLint
 import android.app.Activity
-import android.content.ContentValues.TAG
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.Manifest
@@ -51,11 +50,11 @@ class UserAccount : AppCompatActivity() {
     private lateinit var userEmail: EditText
     private lateinit var userPassword: EditText
 
-    private lateinit var methods: SignUp
     private lateinit var birdObservationRecyclerView: RecyclerView
     private lateinit var birdObservationAdapter: BirdObservationAdapter
 
     private lateinit var profileImageView: ImageView
+    private lateinit var signUpInstance: SignUp
 
     // Firebase references
     private val firebaseAuth: FirebaseAuth = FirebaseAuth.getInstance()
@@ -292,7 +291,7 @@ class UserAccount : AppCompatActivity() {
                     val updatedEmail = userEmail.text.toString().trim()
                     val updatedPassword = userPassword.text.toString().trim()
 
-                    if (methods.isValidPassword(updatedPassword)) {
+                    if (signUpInstance.isValidPassword(updatedPassword)) { // Assuming SignUp.isValidPassword() is your validation method
                         val currentUser = FirebaseAuth.getInstance().currentUser
                         currentUser?.let { user ->
 
@@ -303,8 +302,8 @@ class UserAccount : AppCompatActivity() {
                                             .addOnCompleteListener { passwordUpdateTask ->
                                                 if (passwordUpdateTask.isSuccessful) {
                                                     val userUpdates = mapOf(
-                                                        "username" to updatedUsername,
-                                                        "surname" to updatedSurname
+                                                        "userName" to updatedUsername, // Changed from "username" to "userName"
+                                                        "userSurname" to updatedSurname // Changed from "surname" to "userSurname"
                                                     )
 
                                                     FirebaseDatabase.getInstance().reference.child("users").child(user.uid)
@@ -346,6 +345,8 @@ class UserAccount : AppCompatActivity() {
         userPassword = findViewById(R.id.passwordEt)
         profileImageView = findViewById(R.id.profileImageView)
         birdObservationRecyclerView = findViewById(R.id.rv_birdObservations)
+
+        signUpInstance = SignUp()
 
         profileImageView = findViewById(R.id.profileImageView)
         profileImageView.setOnClickListener {

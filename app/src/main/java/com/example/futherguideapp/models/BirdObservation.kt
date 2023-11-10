@@ -11,6 +11,7 @@ class BirdObservation (
         var lat             : Double,
         var lng             : Double,
         ):Parcelable {
+
         constructor(parcel: Parcel) : this(
                 parcel.readString()!!,
                 parcel.readString()!!,

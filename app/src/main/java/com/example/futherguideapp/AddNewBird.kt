@@ -19,7 +19,6 @@ class AddNewBird : AppCompatActivity() {
     private lateinit var commonNameInput: EditText
     private lateinit var locationInput: EditText
     private lateinit var howManyInput: EditText
-    private lateinit var streetNameInput: EditText
     private lateinit var addBirdButton: Button
     private lateinit var backToBirdListButton: Button
 
@@ -49,14 +48,13 @@ class AddNewBird : AppCompatActivity() {
             val commonName = commonNameInput.text.toString().trim()
             val location = locationInput.text.toString().trim()
             val howManyText = howManyInput.text.toString().trim()
-            val streetName = streetNameInput.text.toString().trim()
 
             try {
                 val howMany = howManyText.toInt()
 
                 // Generate a unique ID for the bird entry and add under the user's UID
                 val birdId = databaseReference.child(uid).push().key ?: return@setOnClickListener
-                val bird = Bird(scientificName, commonName, location, howMany, streetName)
+                val bird = Bird(scientificName, commonName, location, howMany)
 
                 databaseReference.child(uid).child(birdId).setValue(bird)
                     .addOnCompleteListener { task ->
@@ -83,7 +81,6 @@ class AddNewBird : AppCompatActivity() {
         commonNameInput.setText("")
         locationInput.setText("")
         howManyInput.setText("")
-        streetNameInput.setText("")
     }
 
     private fun backToBirdList() {
@@ -102,7 +99,6 @@ class AddNewBird : AppCompatActivity() {
         commonNameInput = findViewById(R.id.commonNameEt)
         locationInput = findViewById(R.id.birdLocationEt)
         howManyInput = findViewById(R.id.userNameEt)
-        streetNameInput = findViewById(R.id.streetNameEt)
         addBirdButton = findViewById(R.id.btn_newBird)
     }
 
@@ -112,11 +108,9 @@ class AddNewBird : AppCompatActivity() {
         val commonName = commonNameInput.text.toString()
         val location = locationInput.text.toString()
         val howMany = howManyInput.text.toString()
-        val streetName = streetNameInput.text.toString()
 
         // Checking if EditTexts are empty
         return scientificName.isNotEmpty() && commonName.isNotEmpty()
                 && location.isNotEmpty() && howMany.isNotEmpty()
-                && streetName.isNotEmpty()
     }
 }

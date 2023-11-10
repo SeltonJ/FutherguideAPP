@@ -203,22 +203,19 @@ class BirdList : AppCompatActivity() {
         }
     }
 
-    @SuppressLint("NotifyDataSetChanged")
     private fun loadBirdsFromDatabase() {
         val uid = FirebaseAuth.getInstance().currentUser?.uid
-
         if (uid != null) {
-            databaseReference.child(uid).addListenerForSingleValueEvent(object : ValueEventListener {
-                override fun onDataChange(dataSnapshot: DataSnapshot) {
-                    try {
-                        listOfBirds.clear()
-                        for (childSnapshot in dataSnapshot.children) {
+            databaseReference.child("users").child(uid).child("birdObservations")
+                .addListenerForSingleValueEvent(object : ValueEventListener {
+                    override fun onDataChange(dataSnapshot: DataSnapshot) {
+                        dataSnapshot.children.forEach { childSnapshot ->
                             val bird = childSnapshot.getValue(Bird::class.java)
                             bird?.let {
                                 val birdObservation = BirdObservation(
-                                    comName = it.commonName ?: "Unknown",
-                                    sciName = it.scientificName ?: "Unknown",
-                                    locName = it.streetName ?: "Unknown",
+                                    comName = it.comName ?: "Unknown",
+                                    sciName = it.sciName ?: "Unknown",
+                                    locName = it.locName ?: "Unknown",
                                     howMany = it.howMany ?: 0,
                                     lat = 0.0,
                                     lng = 0.0
@@ -227,20 +224,16 @@ class BirdList : AppCompatActivity() {
                             }
                         }
                         adapter.notifyDataSetChanged()
-                    } catch (e: Exception) {
-                        Log.e("FirebaseDatabase", "Error processing data", e)
                     }
-                }
 
-                override fun onCancelled(databaseError: DatabaseError) {
-                    Log.w("FirebaseDatabase", "loadPost:onCancelled", databaseError.toException())
-                }
-            })
+                    override fun onCancelled(databaseError: DatabaseError) {
+                        Log.w("FirebaseDatabase", "loadPost:onCancelled", databaseError.toException())
+                    }
+                })
         } else {
             Toast.makeText(this, "User must be logged in to view birds", Toast.LENGTH_SHORT).show()
         }
     }
-
 
     private fun consumeBirdObservations(birdObservationJSON: String?) {
         if (birdObservationJSON != null) {
