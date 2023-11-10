@@ -50,6 +50,7 @@ class UserAccount : AppCompatActivity() {
     private lateinit var userEmail: EditText
     private lateinit var userPassword: EditText
 
+    private lateinit var methods: SignUp
     private lateinit var birdObservationRecyclerView: RecyclerView
     private lateinit var birdObservationAdapter: BirdObservationAdapter
 
@@ -201,6 +202,17 @@ class UserAccount : AppCompatActivity() {
         birdObservationAdapter = BirdObservationAdapter()
         birdObservationRecyclerView.adapter = birdObservationAdapter
 
+        val adapter = BirdObservationAdapter()
+        birdObservationRecyclerView.adapter = adapter
+
+        adapter.onItemClickListener = { birdObservation ->
+            val intent = Intent(this, BirdObservationDetails::class.java)
+            intent.putExtra("birdName", birdObservation.birdName)
+            intent.putExtra("location", birdObservation.location)
+            intent.putExtra("observationDate", birdObservation.observationDate)
+            intent.putExtra("quantity", birdObservation.quantity)
+            startActivity(intent)
+        }
 
         // Fetch bird observations from Firebase
         getAllBirdObservations()
@@ -291,7 +303,7 @@ class UserAccount : AppCompatActivity() {
                     val updatedEmail = userEmail.text.toString().trim()
                     val updatedPassword = userPassword.text.toString().trim()
 
-                    if (signUpInstance.isValidPassword(updatedPassword)) { // Assuming SignUp.isValidPassword() is your validation method
+                    if (signUpInstance.isValidPassword(updatedPassword)) {
                         val currentUser = FirebaseAuth.getInstance().currentUser
                         currentUser?.let { user ->
 
@@ -346,7 +358,8 @@ class UserAccount : AppCompatActivity() {
         profileImageView = findViewById(R.id.profileImageView)
         birdObservationRecyclerView = findViewById(R.id.rv_birdObservations)
 
-        signUpInstance = SignUp()
+        methods = SignUp()
+
 
         profileImageView = findViewById(R.id.profileImageView)
         profileImageView.setOnClickListener {

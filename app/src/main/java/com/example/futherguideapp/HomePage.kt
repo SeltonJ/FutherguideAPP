@@ -25,6 +25,8 @@ import androidx.core.view.GravityCompat
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.view.View
 import android.widget.TextView
@@ -33,6 +35,8 @@ import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GoogleApiAvailability
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.CameraUpdateFactory
+import com.google.android.gms.maps.model.BitmapDescriptor
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.Polyline
 import com.google.android.gms.maps.model.PolylineOptions
@@ -250,6 +254,9 @@ class HomePage : FragmentActivity(), OnMapReadyCallback,
             // Clear existing markers from the map
             mMap.clear()
 
+            // Load the custom bird icon
+            val markerIcon = resizeMapIcons(this, "crow", 100, 100)
+
             // Define the reference point (e.g., center of the circle)
             val referencePoint = LatLng(-33.940405, 18.466618)
             val maxTravelDistance = getMaximumTravelDistance()
@@ -269,12 +276,19 @@ class HomePage : FragmentActivity(), OnMapReadyCallback,
                         .position(LatLng(observation.lat, observation.lng))
                         .title(observation.comName)
                         .snippet("Number of birds: ${observation.howMany}, Location: ${observation.locName}")
+                        .icon(markerIcon)
                 )
             }
 
             // Move the camera to the reference point (optional)
             mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(referencePoint, 10f))
         }
+    }
+
+    private fun resizeMapIcons(context: Context, iconName: String, width: Int, height: Int): BitmapDescriptor {
+        val imageBitmap = BitmapFactory.decodeResource(context.resources, context.resources.getIdentifier(iconName, "drawable", context.packageName))
+        val resizedBitmap = Bitmap.createScaledBitmap(imageBitmap, width, height, false)
+        return BitmapDescriptorFactory.fromBitmap(resizedBitmap)
     }
 
     // Implement this method to get the maximum travel distance from SharedPreferences

@@ -10,6 +10,8 @@ import com.example.futherguideapp.models.UserBirdObservation
 
 class BirdObservationAdapter(private val birdList: MutableList<UserBirdObservation> = mutableListOf()) : RecyclerView.Adapter<BirdObservationAdapter.ViewHolder>() {
 
+    var onItemClickListener: ((UserBirdObservation) -> Unit)? = null
+
     class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val birdName: TextView = itemView.findViewById(R.id.txt_birdComName)
         val birdCount: TextView = itemView.findViewById(R.id.txt_NumberOfBirdViewed)
@@ -35,6 +37,10 @@ class BirdObservationAdapter(private val birdList: MutableList<UserBirdObservati
         holder.birdCount.text = currentBird.quantity.toString()
         holder.birdLocation.text = currentBird.location
         holder.date.text = currentBird.observationDate
+
+        holder.itemView.setOnClickListener {
+            onItemClickListener?.invoke(currentBird)
+        }
     }
 
     override fun getItemCount() = birdList.size

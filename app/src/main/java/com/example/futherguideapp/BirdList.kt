@@ -206,9 +206,15 @@ class BirdList : AppCompatActivity() {
     private fun loadBirdsFromDatabase() {
         val uid = FirebaseAuth.getInstance().currentUser?.uid
         if (uid != null) {
-            databaseReference.child("users").child(uid).child("birdObservations")
+            databaseReference.child("birds").child(uid)
                 .addListenerForSingleValueEvent(object : ValueEventListener {
                     override fun onDataChange(dataSnapshot: DataSnapshot) {
+                        if (!dataSnapshot.exists()) {
+                            Log.d("FirebaseData", "No bird data found under 'birds/$uid'")
+                            return
+                        }
+
+                        listOfBirds.clear()
                         dataSnapshot.children.forEach { childSnapshot ->
                             val bird = childSnapshot.getValue(Bird::class.java)
                             bird?.let {
@@ -217,17 +223,18 @@ class BirdList : AppCompatActivity() {
                                     sciName = it.sciName ?: "Unknown",
                                     locName = it.locName ?: "Unknown",
                                     howMany = it.howMany ?: 0,
-                                    lat = 0.0,
+                                    lat = 0.0, // Assuming you don't have lat/lng in Bird class
                                     lng = 0.0
                                 )
                                 listOfBirds.add(birdObservation)
                             }
                         }
                         adapter.notifyDataSetChanged()
+                        Log.d("FirebaseData", "Total birds loaded: ${listOfBirds.size}")
                     }
 
                     override fun onCancelled(databaseError: DatabaseError) {
-                        Log.w("FirebaseDatabase", "loadPost:onCancelled", databaseError.toException())
+                        Log.e("FirebaseData", "loadPost:onCancelled", databaseError.toException())
                     }
                 })
         } else {
