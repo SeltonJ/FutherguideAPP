@@ -1,0 +1,22 @@
+<resources>
+    <string name="app_name">Feather Guide</string>
+    <string name="nav_open">Open</string>
+    <string name="nav_close">Close</string>
+    <string name="search_hint">Search here …</string>
+    <string name="GoogleMapsApiKey">AIzaSyA5qBmt7CN2feoI2QGucCgFPDNNrf4ZlNM</string>
+    <string name="bird_name">Bird Name</string>
+    <string name="navigate_to_bird">Navigate to Bird</string>
+    <string name="delete_route">Delete Route</string>
+    <string name="view_observations">View Observations</string>
+    <string name="add_observation">Add Observation</string>
+    <string name="birds">birds</string>
+    <string name="how_many">How many</string>
+    <string name="location">Location</string>
+    <string name="comname">ComName</string>
+    <string name="species">Species</string>
+    <string name="street_name">Street Name</string>
+    <string name="log_in">Log In</string>
+    <string name="sign_up">Sign Up</string>
+    <string name="welcome">Welcome</string>
+
+</resources>

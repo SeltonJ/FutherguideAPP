@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "719538461393",
+    "firebase_url": "https://bird-watching-app-default-rtdb.firebaseio.com",
+    "project_id": "bird-watching-app",
+    "storage_bucket": "bird-watching-app.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:719538461393:android:cc6a0bd6cad2a11bc503f0",
+        "android_client_info": {
+          "package_name": "com.example.futherguideapp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "719538461393-k3ofq1lvp5o0q8mnsl0e98av1h7du4rl.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCVoNfyUOlH7nVmZc4ro_KaMw-lTtISYo0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "719538461393-k3ofq1lvp5o0q8mnsl0e98av1h7du4rl.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

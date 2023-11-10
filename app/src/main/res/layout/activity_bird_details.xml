@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/lightBlue"
+    tools:context=".BirdDetails">
+
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/card"
+        style="@style/Widget.App.CardView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="20dp"
+        app:cardPreventCornerOverlap="false">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+        <com.google.android.material.imageview.ShapeableImageView
+            android:id="@+id/imageView"
+            android:layout_width="match_parent"
+            android:layout_height="250dp"
+            android:scaleType="centerCrop"
+            android:src="@drawable/bird"
+            app:shapeAppearance="?attr/shapeAppearanceMediumComponent"
+            app:shapeAppearanceOverlay="@style/ShapeAppearanceOverlay.App.Card.Media"/>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <TextView
+                android:id="@+id/txt_birdComName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/bird_name"
+                android:textColor="@color/black"
+                android:textSize="24sp"
+                android:fontFamily="sans-serif-black"/>
+
+            <TextView
+                android:id="@+id/txt_birdsSciName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/comname"
+                android:layout_marginTop="8dp"
+                android:textColor="@color/black"
+                android:textSize="18sp"/>
+
+            <TextView
+                android:id="@+id/txt_birdHowMany"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/how_many"
+                android:textColor="@color/black"
+                android:textSize="18sp"
+                android:layout_marginTop="8dp"/>
+
+            <TextView
+                android:id="@+id/txt_birdLocation"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/location"
+                android:textColor="@color/black"
+                android:textSize="18sp"
+                android:layout_marginTop="8dp"/>
+
+            <TextView
+                android:id="@+id/txt_StreetName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Street name"
+                android:textColor="@color/black"
+                android:textSize="18sp"
+                android:layout_marginTop="8dp"/>
+
+            <!-- Buttons -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                android:orientation="horizontal"
+                android:layout_gravity="center">
+
+                <Button
+                    android:id="@+id/btn_birdObservations"
+                    android:layout_width="wrap_content"
+                    android:layout_margin="5dp"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/white_btn"
+                    android:text="@string/add_observation"
+                    android:textColor="@color/white"/>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_back"
+                    android:layout_margin="5dp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="8dp"
+                    style="?attr/borderlessButtonStyle"
+                    android:text="@string/birds"/>
+
+                </LinearLayout>
+            </LinearLayout>
+        </LinearLayout>
+
+    </com.google.android.material.card.MaterialCardView>
+
+</LinearLayout>
