@@ -6,10 +6,16 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.Manifest
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.Matrix
+import android.media.ExifInterface
 import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.provider.MediaStore
 import android.provider.OpenableColumns
+import android.util.Base64
 import android.util.Log
 import android.widget.Button
 import android.widget.EditText
@@ -36,6 +42,7 @@ import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
 import com.google.firebase.storage.FirebaseStorage
+import java.io.ByteArrayOutputStream
 import java.io.File
 
 class UserAccount : AppCompatActivity() {
@@ -57,11 +64,12 @@ class UserAccount : AppCompatActivity() {
     private lateinit var profileImageView: ImageView
     private lateinit var signUpInstance: SignUp
 
+    private val PICK_IMAGE_REQUEST = 1
+
     // Firebase references
     private val firebaseAuth: FirebaseAuth = FirebaseAuth.getInstance()
 
     private var isEditMode = false
-    private lateinit var imagePickerActivityResult: ActivityResultLauncher<Intent>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -71,41 +79,12 @@ class UserAccount : AppCompatActivity() {
         initializeUIComponents()
         editUserDetails()
         setupRecyclerView()
-        checkPermissionAndPickImage()
 
-        imagePickerActivityResult = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-            if (result.resultCode == Activity.RESULT_OK) {
-                // getting URI of selected Image
-                val imageUri: Uri? = result.data?.data
-
-                // Use the URI to upload to Firebase
-                imageUri?.let { uri ->
-                    // Extract the file name with extension
-                    val fileName = getFileName(applicationContext, uri)
-
-                    // Assuming 'storageRef' is a reference to your Firebase Storage
-                    val fileRef = FirebaseStorage.getInstance().reference.child("users/profile_images/$fileName")
-
-                    fileRef.putFile(uri)
-                        .addOnSuccessListener { taskSnapshot ->
-                            // Get the download URL and update user profile picture URL in the real-time database
-                            taskSnapshot.storage.downloadUrl.addOnSuccessListener { downloadUri ->
-                                val userRef = FirebaseDatabase.getInstance().getReference("users").child(firebaseAuth.currentUser!!.uid)
-                                userRef.child("profileImageUrl").setValue(downloadUri.toString())
-                                    .addOnSuccessListener {
-                                        // Image upload successful, handle this case
-                                        Glide.with(this).load(downloadUri).into(profileImageView)
-                                    }
-                                    .addOnFailureListener {
-                                        // Handle the failure case
-                                    }
-                            }
-                        }
-                        .addOnFailureListener {
-                            // Handle the failure case
-                        }
-                }
-            }
+        // Add this to your initializeUIComponents function
+        profileImageView.setOnClickListener {
+            val intent = Intent(Intent.ACTION_PICK)
+            intent.type = "image/*"
+            startActivityForResult(intent, PICK_IMAGE_REQUEST)
         }
 
         // Replace populateUserDetails(userEmail) with Firebase call
@@ -114,84 +93,56 @@ class UserAccount : AppCompatActivity() {
         }
     }
 
-    private fun getFileName(context: Context, uri: Uri): String? {
-        if (uri.scheme.equals("content")) {
-            val cursor = context.contentResolver.query(uri, null, null, null, null)
-            cursor?.use { c ->
-                if (c.moveToFirst()) {
-                    val index = c.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-                    if (index != -1) {
-                        return c.getString(index)
-                    }
-                }
-            }
-        } else if (uri.scheme.equals("file")) {
-            return File(uri.path!!).name
-        }
-        return null
-    }
-
-    private fun checkPermissionAndPickImage() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)
-            != PackageManager.PERMISSION_GRANTED) {
-
-            ActivityCompat.requestPermissions(this,
-                arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE),
-                MY_PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE)
-        } else {
-            pickImageFromGallery()
-        }
-    }
-
-    private fun pickImageFromGallery() {
-        val intent = Intent(Intent.ACTION_GET_CONTENT)
-        intent.type = "image/*"
-        startActivityForResult(intent, IMAGE_PICK_CODE)
-    }
-
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        when (requestCode) {
-            MY_PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE -> {
-                if ((grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED)) {
-                    pickImageFromGallery()
-                } else {
-                    Toast.makeText(this, "Permission Denied", Toast.LENGTH_SHORT).show()
-                }
-            }
-        }
-    }
-
+    // Override onActivityResult to handle image selection
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == SELECT_PROFILE_IMAGE_REQUEST && resultCode == Activity.RESULT_OK && data != null) {
-            data.data?.let { imageUri ->
-                // Handle the picked image
-                profileImageView.setImageURI(imageUri)
-                uploadImageToFirebase(imageUri)
+        if (requestCode == PICK_IMAGE_REQUEST && resultCode == Activity.RESULT_OK && data != null && data.data != null) {
+            val imageUri: Uri? = data.data
+            imageUri?.let { uri ->
+                val bitmap = MediaStore.Images.Media.getBitmap(contentResolver, uri)
+                val rotatedBitmap = getCorrectlyOrientedImage(this, uri)
+                uploadImageToFirebase(rotatedBitmap ?: bitmap) // Upload the rotated bitmap, or the original if rotation fails
             }
         }
     }
 
-    private fun uploadImageToFirebase(imageUri: Uri) {
-        val userId = FirebaseAuth.getInstance().currentUser?.uid ?: return
-        val fileRef = FirebaseStorage.getInstance().reference.child("profile_images/$userId.jpg")
+    private fun getCorrectlyOrientedImage(context: Context, photoUri: Uri): Bitmap? {
+        val inputStream = context.contentResolver.openInputStream(photoUri)
+        val ei = ExifInterface(inputStream!!)
+        val orientation = ei.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_UNDEFINED)
+        inputStream.close()
 
-        fileRef.putFile(imageUri)
-            .addOnSuccessListener { taskSnapshot ->
-                taskSnapshot.storage.downloadUrl.addOnSuccessListener { uri ->
-                    val userRef = FirebaseDatabase.getInstance().getReference("users").child(userId)
-                    userRef.child("profileImageUrl").setValue(uri.toString())
-                        .addOnSuccessListener {
-                            Toast.makeText(this, "Profile image updated.", Toast.LENGTH_SHORT).show()
-                            Glide.with(this).load(uri).into(profileImageView)
-                        }
-                        .addOnFailureListener { e ->
-                            Toast.makeText(this, "Failed to update profile image in database.", Toast.LENGTH_SHORT).show()
-                        }
-                }
+        val bitmap = MediaStore.Images.Media.getBitmap(context.contentResolver, photoUri)
+
+        return when (orientation) {
+            ExifInterface.ORIENTATION_ROTATE_90 -> rotateImage(bitmap, 90f)
+            ExifInterface.ORIENTATION_ROTATE_180 -> rotateImage(bitmap, 180f)
+            ExifInterface.ORIENTATION_ROTATE_270 -> rotateImage(bitmap, 270f)
+            else -> bitmap
+        }
+    }
+
+    private fun rotateImage(source: Bitmap, angle: Float): Bitmap {
+        val matrix = Matrix()
+        matrix.postRotate(angle)
+        return Bitmap.createBitmap(source, 0, 0, source.width, source.height, matrix, true)
+    }
+
+    // Upload the image to Firebase
+    private fun uploadImageToFirebase(bitmap: Bitmap) {
+        val userId = FirebaseAuth.getInstance().currentUser?.uid ?: return
+        val baos = ByteArrayOutputStream()
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 100, baos)
+        val byteArray = baos.toByteArray()
+        val encodedImage = Base64.encodeToString(byteArray, Base64.DEFAULT)
+
+        FirebaseDatabase.getInstance().getReference("users").child(userId)
+            .child("profileImageBase64").setValue(encodedImage)
+            .addOnSuccessListener {
+                Glide.with(this).load(bitmap).into(profileImageView)
+                Toast.makeText(this, "Profile image updated.", Toast.LENGTH_SHORT).show()
             }
-            .addOnFailureListener { e ->
+            .addOnFailureListener {
                 Toast.makeText(this, "Failed to upload image.", Toast.LENGTH_SHORT).show()
             }
     }
@@ -254,7 +205,6 @@ class UserAccount : AppCompatActivity() {
         userRef.addListenerForSingleValueEvent(object : ValueEventListener {
             override fun onDataChange(dataSnapshot: DataSnapshot) {
                 if (dataSnapshot.exists()) {
-
                     // Get the values from the dataSnapshot and set them to the EditText fields
                     val userNameValue = dataSnapshot.child("userName").getValue(String::class.java)
                     val userEmailValue = dataSnapshot.child("userEmail").getValue(String::class.java)
@@ -267,10 +217,14 @@ class UserAccount : AppCompatActivity() {
                     userSurname.setText(userSurnameValue)
                     userPassword.setText(userPasswordValue)
 
-                    val profileImageUrl = dataSnapshot.child("profileImageUrl").getValue(String::class.java)
-                    profileImageUrl?.let { url ->
-                        Glide.with(this@UserAccount).load(url).into(profileImageView)
+                    // Retrieve and display the profile image
+                    val profileImageBase64 = dataSnapshot.child("profileImageBase64").getValue(String::class.java)
+                    profileImageBase64?.let {
+                        val decodedBytes = Base64.decode(it, Base64.DEFAULT)
+                        val decodedBitmap = BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.size)
+                        Glide.with(this@UserAccount).load(decodedBitmap).into(profileImageView)
                     } ?: run {
+                        // Set default image if no image is found
                         Glide.with(this@UserAccount).load(R.drawable.user).into(profileImageView)
                     }
                 } else {
@@ -314,8 +268,8 @@ class UserAccount : AppCompatActivity() {
                                             .addOnCompleteListener { passwordUpdateTask ->
                                                 if (passwordUpdateTask.isSuccessful) {
                                                     val userUpdates = mapOf(
-                                                        "userName" to updatedUsername, // Changed from "username" to "userName"
-                                                        "userSurname" to updatedSurname // Changed from "surname" to "userSurname"
+                                                        "userName" to updatedUsername,
+                                                        "userSurname" to updatedSurname
                                                     )
 
                                                     FirebaseDatabase.getInstance().reference.child("users").child(user.uid)
@@ -357,16 +311,7 @@ class UserAccount : AppCompatActivity() {
         userPassword = findViewById(R.id.passwordEt)
         profileImageView = findViewById(R.id.profileImageView)
         birdObservationRecyclerView = findViewById(R.id.rv_birdObservations)
-
         methods = SignUp()
-
-
-        profileImageView = findViewById(R.id.profileImageView)
-        profileImageView.setOnClickListener {
-            val intent = Intent(Intent.ACTION_PICK)
-            intent.type = "image/*"
-            startActivityForResult(intent, SELECT_PROFILE_IMAGE_REQUEST)
-        }
     }
 
     private fun allowEditText(){
@@ -460,11 +405,5 @@ class UserAccount : AppCompatActivity() {
             }
             true
         }
-    }
-
-    companion object {
-        private const val SELECT_PROFILE_IMAGE_REQUEST = 1001
-        private val MY_PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE = 101
-        private val IMAGE_PICK_CODE = 102
     }
 }
