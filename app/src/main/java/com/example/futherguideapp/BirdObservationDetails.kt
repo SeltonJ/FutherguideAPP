@@ -38,7 +38,6 @@ class BirdObservationDetails : AppCompatActivity() {
         goToUserAccountPage()
     }
 
-
     private fun goToUserAccountPage(){
         back = findViewById(R.id.btn_back);
         back.setOnClickListener {
