@@ -15,6 +15,7 @@ import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import com.google.android.material.navigation.NavigationView
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.database.FirebaseDatabase
 
 class Settings : AppCompatActivity() {
 
@@ -30,6 +31,9 @@ class Settings : AppCompatActivity() {
     private lateinit var radioGroup: RadioGroup
     private var lastSeekBarProgress = 0
 
+    private val firebaseAuth: FirebaseAuth = FirebaseAuth.getInstance()
+    private val databaseReference = FirebaseDatabase.getInstance().reference
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_settings)
@@ -39,22 +43,68 @@ class Settings : AppCompatActivity() {
         seekBar()
         radioButton()
         loadSavedValues()
+        loadSettings()
+
+    }
+
+    private fun loadSettings() {
+        val userId = firebaseAuth.currentUser?.uid
+        if (userId != null) {
+            databaseReference.child("userSettings").child(userId).get().addOnSuccessListener { dataSnapshot ->
+                if (dataSnapshot.exists()) {
+                    // Load settings from Firebase
+                    isKilometers = dataSnapshot.child("isKilometers").getValue(Boolean::class.java) ?: true
+                    lastSeekBarProgress = dataSnapshot.child("maxTravelDistance").getValue(Int::class.java) ?: 0
+
+                    // Update UI
+                    seekBar.progress = lastSeekBarProgress
+                    updateValueText(lastSeekBarProgress)
+                    radioGroup.check(if (isKilometers) R.id.metrics else R.id.offer)
+
+                    // Update SharedPreferences
+                    updateSharedPreferences()
+                }
+            }
+        }
+    }
+
+    private fun updateSharedPreferences() {
+        val sharedPreferences = getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
+        val editor = sharedPreferences.edit()
+        editor.putBoolean("isKilometers", isKilometers)
+        editor.putInt("maxTravelDistance", lastSeekBarProgress)
+        editor.apply()
+    }
+
+    private fun saveSettingsToFirebase() {
+        val userId = firebaseAuth.currentUser?.uid
+        if (userId != null) {
+            val settingsMap = hashMapOf(
+                "isKilometers" to isKilometers,
+                "maxTravelDistance" to lastSeekBarProgress
+            )
+            databaseReference.child("userSettings").child(userId).setValue(settingsMap)
+        }
     }
 
     private fun loadSavedValues() {
-        val sharedPreferences = getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
-        isKilometers = sharedPreferences.getBoolean("isKilometers", true)
-        lastSeekBarProgress = sharedPreferences.getInt("maxTravelDistance", 0)
+        val userId = firebaseAuth.currentUser?.uid
+        if (userId != null) {
+            databaseReference.child("userSettings").child(userId).get().addOnSuccessListener { dataSnapshot ->
+                if (dataSnapshot.exists()) {
+                    isKilometers = dataSnapshot.child("isKilometers").getValue(Boolean::class.java) ?: true
+                    lastSeekBarProgress = dataSnapshot.child("maxTravelDistance").getValue(Int::class.java) ?: 0
 
-        // Set the SeekBar progress and update the value TextView
-        seekBar.progress = lastSeekBarProgress
-        updateValueText(lastSeekBarProgress)
+                    seekBar.progress = lastSeekBarProgress
+                    updateValueText(lastSeekBarProgress)
 
-        // Set the selected radio button based on the stored preference
-        if (isKilometers) {
-            radioGroup.check(R.id.metrics)
-        } else {
-            radioGroup.check(R.id.offer)
+                    if (isKilometers) {
+                        radioGroup.check(R.id.metrics)
+                    } else {
+                        radioGroup.check(R.id.offer)
+                    }
+                }
+            }
         }
     }
 
@@ -109,6 +159,7 @@ class Settings : AppCompatActivity() {
             }
             setMetric()
             saveUnitPreference(isKilometers)
+            saveSettingsToFirebase() // Save changes to Firebase
         }
     }
     @SuppressLint("SetTextI18n")
@@ -123,19 +174,23 @@ class Settings : AppCompatActivity() {
             unit = "m"
         }
         value.text = "$displayValue $unit"
+        lastSeekBarProgress = progress
+        saveSettingsToFirebase()
+    }
+
+    fun saveMaxTravelDistance(maxTravelDistance: Int) {
+        lastSeekBarProgress = maxTravelDistance // Update the last seek bar progress
+        val sharedPreferences = getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
+        val editor = sharedPreferences.edit()
+        editor.putInt("maxTravelDistance", maxTravelDistance)
+        editor.apply()
+        saveSettingsToFirebase()
     }
 
     private fun saveUnitPreference(isKilometers: Boolean) {
         val sharedPreferences = getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
         val editor = sharedPreferences.edit()
         editor.putBoolean("isKilometers", isKilometers)
-        editor.apply()
-    }
-
-    fun saveMaxTravelDistance(maxTravelDistance: Int) {
-        val sharedPreferences = getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
-        val editor = sharedPreferences.edit()
-        editor.putInt("maxTravelDistance", maxTravelDistance)
         editor.apply()
     }
 
