@@ -31,6 +31,7 @@ import android.graphics.Color
 import android.view.View
 import android.widget.TextView
 import android.widget.Toast
+import com.example.futherguideapp.models.Bird
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GoogleApiAvailability
 import com.google.android.gms.location.LocationServices
@@ -42,8 +43,13 @@ import com.google.android.gms.maps.model.Polyline
 import com.google.android.gms.maps.model.PolylineOptions
 import com.google.android.material.navigation.NavigationView
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ValueEventListener
 import org.json.JSONObject
 import java.net.URL
+import java.net.URLEncoder
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -107,6 +113,75 @@ class HomePage : FragmentActivity(), OnMapReadyCallback,
                 addMarkersToMap()
             }
         }
+    }
+
+    private fun fetchBirdData() {
+        val uid = FirebaseAuth.getInstance().currentUser?.uid
+        if (uid != null) {
+            FirebaseDatabase.getInstance().getReference("birds").child(uid)
+                .addListenerForSingleValueEvent(object : ValueEventListener {
+                    override fun onDataChange(dataSnapshot: DataSnapshot) {
+                        if (dataSnapshot.exists()) {
+                            dataSnapshot.children.forEach { snapshot ->
+                                val bird = snapshot.getValue(Bird::class.java)
+                                bird?.let {
+                                    // Here, convert the location address to latitude and longitude
+                                    it.locName?.let { it1 ->
+                                        convertAddressToLatLng(it1) { latLng ->
+                                            // Then add marker on the map
+                                            addBirdMarkerOnMap(it, latLng)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    override fun onCancelled(databaseError: DatabaseError) {
+                        Log.e("FirebaseData", "Error fetching birds", databaseError.toException())
+                    }
+                })
+        }
+    }
+
+    private fun convertAddressToLatLng(address: String, callback: (LatLng) -> Unit) {
+        val apiKey = BuildConfig.GOOGLE_MAPS_API_KEY
+        val url = "https://maps.googleapis.com/maps/api/geocode/json?address=${URLEncoder.encode(address, "UTF-8")}&key=$apiKey"
+
+        thread {
+            try {
+                val result = URL(url).readText()
+                val jsonObject = JSONObject(result)
+                if (jsonObject.has("results")) {
+                    val results = jsonObject.getJSONArray("results")
+                    if (results.length() > 0) {
+                        val location = results.getJSONObject(0).getJSONObject("geometry").getJSONObject("location")
+                        val lat = location.getDouble("lat")
+                        val lng = location.getDouble("lng")
+                        callback(LatLng(lat, lng))
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("GeocodingError", "Error in converting address", e)
+            }
+        }
+    }
+
+    private fun addBirdMarkerOnMap(bird: Bird, latLng: LatLng) {
+        runOnUiThread {
+            val customIcon = getCustomMarkerIcon()
+            val markerOptions = MarkerOptions()
+                .position(latLng)
+                .title(bird.comName)
+                .snippet("Scientific Name: ${bird.sciName}, Quantity: ${bird.howMany}")
+                .icon(customIcon) // Set the custom icon here
+            mMap.addMarker(markerOptions)
+        }
+    }
+
+    private fun getCustomMarkerIcon(): BitmapDescriptor {
+        val imageBitmap = BitmapFactory.decodeResource(resources, R.drawable.newbird)
+        val resizedBitmap = Bitmap.createScaledBitmap(imageBitmap, 100, 100, false)
+        return BitmapDescriptorFactory.fromBitmap(resizedBitmap)
     }
 
     private fun findRoutes(start: LatLng, end: LatLng, marker: Marker) {
@@ -340,6 +415,7 @@ class HomePage : FragmentActivity(), OnMapReadyCallback,
         initializeLocationTracking()
         getMyLocation()
         isLocationPermissionGranted = checkLocationPermission()
+        fetchBirdData()
 
         // Whenever a marker is clicked, reset its snippet
         mMap.setOnMarkerClickListener { marker ->

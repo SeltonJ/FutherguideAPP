@@ -38,6 +38,12 @@ class AddNewBird : AppCompatActivity() {
                 return@setOnClickListener
             }
 
+            if (!isValidAddress(locationInput.text.toString())) {
+                Toast.makeText(this, "Invalid address format. Please enter a correct address.", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+
             val uid = FirebaseAuth.getInstance().currentUser?.uid
             if (uid == null) {
                 Toast.makeText(this, "User must be logged in to add a bird", Toast.LENGTH_SHORT).show()
@@ -76,6 +82,12 @@ class AddNewBird : AppCompatActivity() {
         }
     }
 
+    private fun isValidAddress(address: String): Boolean {
+        // Regular Expression for basic address validation
+        // This is a simple example and might need to be adapted based on the address formats you expect
+        val addressRegex = "^[a-zA-Z0-9,\\s]+".toRegex()
+        return address.isNotEmpty() && addressRegex.matches(address)
+    }
     private fun clearInputFields() {
         scientificNameInput.setText("")
         commonNameInput.setText("")
