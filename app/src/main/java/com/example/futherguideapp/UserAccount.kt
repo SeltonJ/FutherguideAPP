@@ -62,7 +62,6 @@ class UserAccount : AppCompatActivity() {
     private lateinit var birdObservationAdapter: BirdObservationAdapter
 
     private lateinit var profileImageView: ImageView
-    private lateinit var signUpInstance: SignUp
 
     private val PICK_IMAGE_REQUEST = 1
 
@@ -257,7 +256,8 @@ class UserAccount : AppCompatActivity() {
                     val updatedEmail = userEmail.text.toString().trim()
                     val updatedPassword = userPassword.text.toString().trim()
 
-                    if (signUpInstance.isValidPassword(updatedPassword)) {
+                    if (SignUp.isValidPassword(updatedPassword)) {
+
                         val currentUser = FirebaseAuth.getInstance().currentUser
                         currentUser?.let { user ->
 

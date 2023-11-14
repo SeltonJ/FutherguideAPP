@@ -84,7 +84,6 @@ class AddNewBird : AppCompatActivity() {
 
     private fun isValidAddress(address: String): Boolean {
         // Regular Expression for basic address validation
-        // This is a simple example and might need to be adapted based on the address formats you expect
         val addressRegex = "^[a-zA-Z0-9,\\s]+".toRegex()
         return address.isNotEmpty() && addressRegex.matches(address)
     }

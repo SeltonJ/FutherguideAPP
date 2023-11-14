@@ -379,7 +379,7 @@ class HomePage : FragmentActivity(), OnMapReadyCallback,
 
         // Convert the userMaxTravelDistance based on unit preference
         val number = if (isKilometers) {
-            userMaxTravelDistance * 1000
+            userMaxTravelDistance *1000
         } else {
             userMaxTravelDistance
         }

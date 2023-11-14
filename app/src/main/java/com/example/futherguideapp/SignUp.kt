@@ -118,9 +118,11 @@ class SignUp : AppCompatActivity() {
         }
     }
 
-    fun isValidPassword(password: String): Boolean {
-        val regex = "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=])(?=\\S+$).{5,}$".toRegex()
-        return regex.matches(password)
+    companion object {
+        fun isValidPassword(password: String): Boolean {
+            val regex = "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=])(?=\\S+$).{5,}$".toRegex()
+            return regex.matches(password)
+        }
     }
 
     private fun initializeUIComponents() {
